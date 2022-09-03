@@ -85,7 +85,10 @@ float TDS::read(float temperature)
             float compensationVoltage = averageVoltage / compensationCoefficient;
 
             // convert voltage value to tds value
-            tdsValue = (133.42 * compensationVoltage * compensationVoltage * compensationVoltage - 255.86 * compensationVoltage * compensationVoltage + 857.39 * compensationVoltage) * 0.5;
+            float Value = (133.42 * compensationVoltage * compensationVoltage * compensationVoltage - 255.86 *
+                    compensationVoltage * compensationVoltage + 857.39 * compensationVoltage) * 0.5;
+
+            tdsValue = (Value < 40) ? 0 : Value; //simple calibrate 
         }
     }
     return tdsValue;
