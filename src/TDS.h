@@ -88,7 +88,7 @@ float TDS::read(float temperature)
             float Value = (133.42 * compensationVoltage * compensationVoltage * compensationVoltage - 255.86 *
                     compensationVoltage * compensationVoltage + 857.39 * compensationVoltage) * 0.5;
 
-            tdsValue = random(100, 103);//Value; //(Value < 1) ? 0 : Value; //simple calibrating 
+            tdsValue = value; 
         }
     }
     return tdsValue;
