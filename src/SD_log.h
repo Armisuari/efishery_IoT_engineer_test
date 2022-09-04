@@ -22,8 +22,140 @@
 // String dayStamp;
 // String timeStamp;
 
-void writeFile(fs::FS &fs, const char *path, const char *message);
-void appendFile(fs::FS &fs, const char *path, const char *message);
+// Write to the SD card (DON'T MODIFY THIS FUNCTION)
+void writeFile(fs::FS &fs, const char *path, const char *message)
+{
+  Serial.printf("Writing file: %s\n", path);
+
+  File file = fs.open(path, FILE_WRITE);
+  if (!file)
+  {
+    Serial.println("Failed to open file for writing");
+    return;
+  }
+  if (file.print(message))
+  {
+    Serial.println("File written");
+  }
+  else
+  {
+    Serial.println("Write failed");
+  }
+  file.close();
+}
+
+// Append data to the SD card (DON'T MODIFY THIS FUNCTION)
+void appendFile(fs::FS &fs, const char *path, const char *message)
+{
+  Serial.printf("Appending to file: %s\n", path);
+
+  File file = fs.open(path, FILE_APPEND);
+  if (!file)
+  {
+    Serial.println("Failed to open file for appending");
+    return;
+  }
+  if (file.print(message))
+  {
+    Serial.println("Message appended");
+  }
+  else
+  {
+    Serial.println("Append failed");
+  }
+  file.close();
+}
+
+void listDir(fs::FS &fs, const char *dirname, uint8_t levels)
+{
+  Serial.printf("Listing directory: %s\n", dirname);
+
+  File root = fs.open(dirname);
+  if (!root)
+  {
+    Serial.println("Failed to open directory");
+    return;
+  }
+  if (!root.isDirectory())
+  {
+    Serial.println("Not a directory");
+    return;
+  }
+
+  File file = root.openNextFile();
+  while (file)
+  {
+    if (file.isDirectory())
+    {
+      Serial.print("  DIR : ");
+      Serial.println(file.name());
+      if (levels)
+      {
+        listDir(fs, file.path(), levels - 1);
+      }
+    }
+    else
+    {
+      Serial.print("  FILE: ");
+      Serial.print(file.name());
+      Serial.print("  SIZE: ");
+      Serial.println(file.size());
+    }
+    file = root.openNextFile();
+  }
+}
+
+void createDir(fs::FS &fs, const char *path)
+{
+  Serial.printf("Creating Dir: %s\n", path);
+  if (fs.mkdir(path))
+  {
+    Serial.println("Dir created");
+  }
+  else
+  {
+    Serial.println("mkdir failed");
+  }
+}
+
+void removeDir(fs::FS &fs, const char *path)
+{
+  Serial.printf("Removing Dir: %s\n", path);
+  if (fs.rmdir(path))
+  {
+    Serial.println("Dir removed");
+  }
+  else
+  {
+    Serial.println("rmdir failed");
+  }
+}
+
+void readFile(fs::FS &fs, const char *path)
+{
+  Serial.printf("Reading file: %s\n", path);
+
+  File file = fs.open(path);
+  if (!file)
+  {
+    Serial.println("Failed to open file for reading");
+    return;
+  }
+
+  Serial.print("Read from file: ");
+  while (file.available())
+  {
+    Serial.write(file.read());
+  }
+  file.close();
+}
+
+void logSDCard(String dataMessage)
+{
+  Serial.print("Save data: ");
+  Serial.println(dataMessage);
+  appendFile(SD, "/data.txt", dataMessage.c_str());
+}
 
 void setup_sd()
 {
@@ -101,86 +233,4 @@ void setup_sd()
   // Start deep sleep
   //   Serial.println("DONE! Going to sleep now.");
   //   esp_deep_sleep_start();
-}
-
-// Function to get temperature
-// void getReadings(){
-//   sensors.requestTemperatures();
-//   temperature = sensors.getTempCByIndex(0); // Temperature in Celsius
-//   //temperature = sensors.getTempFByIndex(0); // Temperature in Fahrenheit
-//   Serial.print("Temperature: ");
-//   Serial.println(temperature);
-// }
-
-// Function to get date and time from NTPClient
-// void getTimeStamp() {
-//   while(!timeClient.update()) {
-//     timeClient.forceUpdate();
-//   }
-//   // The formattedDate comes with the following format:
-//   // 2018-05-28T16:00:13Z
-//   // We need to extract date and time
-//   formattedDate = timeClient.getFormattedDate();
-//   Serial.println(formattedDate);
-
-//   // Extract date
-//   int splitT = formattedDate.indexOf("T");
-//   dayStamp = formattedDate.substring(0, splitT);
-//   Serial.println(dayStamp);
-//   // Extract time
-//   timeStamp = formattedDate.substring(splitT+1, formattedDate.length()-1);
-//   Serial.println(timeStamp);
-// }
-
-// Write the sensor readings on the SD card
-void logSDCard(String dataMessage) {
-  // dataMessage = String(readingID) + "," + String(dayStamp) + "," + String(timeStamp) + "," +
-  //               String(temperature) + "\r\n";
-  Serial.print("Save data: ");
-  Serial.println(dataMessage);
-  appendFile(SD, "/data.txt", dataMessage.c_str());
-}
-
-// Write to the SD card (DON'T MODIFY THIS FUNCTION)
-void writeFile(fs::FS &fs, const char *path, const char *message)
-{
-  Serial.printf("Writing file: %s\n", path);
-
-  File file = fs.open(path, FILE_WRITE);
-  if (!file)
-  {
-    Serial.println("Failed to open file for writing");
-    return;
-  }
-  if (file.print(message))
-  {
-    Serial.println("File written");
-  }
-  else
-  {
-    Serial.println("Write failed");
-  }
-  file.close();
-}
-
-// Append data to the SD card (DON'T MODIFY THIS FUNCTION)
-void appendFile(fs::FS &fs, const char *path, const char *message)
-{
-  Serial.printf("Appending to file: %s\n", path);
-
-  File file = fs.open(path, FILE_APPEND);
-  if (!file)
-  {
-    Serial.println("Failed to open file for appending");
-    return;
-  }
-  if (file.print(message))
-  {
-    Serial.println("Message appended");
-  }
-  else
-  {
-    Serial.println("Append failed");
-  }
-  file.close();
 }

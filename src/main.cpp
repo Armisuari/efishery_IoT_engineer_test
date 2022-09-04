@@ -4,14 +4,17 @@
 #include "TDS.h"
 #include "SD_log.h"
 
-#define interval 1000
+int interval = 5000;
 float temperature;
-unsigned long previousMillis;
+unsigned long prevMill, previousMillis;
+String timestamp, inChar, inData;
+bool config = true;
 
 TDS myTDS(27);
 String payload;
 
 void read_sensors(void *parameter);
+void input_handle();
 
 void setup()
 {
@@ -19,7 +22,6 @@ void setup()
   setup_time();
   setup_sd();
   sensors.begin();
-  // pinMode(TdsSensorPin,INPUT);
 
   xTaskCreate(
       read_sensors,
@@ -29,17 +31,29 @@ void setup()
       1,
       NULL);
 
+  printf("Ready...\n");
+
   while (1)
   {
     DateTime now = rtc.now();
-    if (millis() - previousMillis >= 5000)
+
+    input_handle();
+
+    if (millis() - prevMill >= 1000)
+    {
+      prevMill = millis();
+      printf("Date Time: %s,%d-%d-%d | %s >> ", daysOfTheWeek[now.dayOfTheWeek()], now.day(), now.month(), now.year(), timestamp);
+      printf("Temperature: %.1f ºC, TDS: %.f ppm\n", temperature, myTDS.read(temperature));
+    }
+
+    if (millis() - previousMillis >= interval)
     {
       previousMillis = millis();
       payload = String(daysOfTheWeek[now.dayOfTheWeek()]) + "@" + String(now.day()) + "@" + String(now.month()) + "@" + String(now.year()) +
-                "#" + String(temperature, 1) + "#" + String(myTDS.read(temperature), 0) + "\r\n";
-
-      Serial.println(payload);
+                "@" + timestamp + "#" + String(temperature, 1) + "#" + String(myTDS.read(temperature), 0) + "\r\n";
       logSDCard(payload);
+      printf("interval: %d\n", interval);
+      printf("Ketik 'help' untuk beralih ke menu !\n\n");
     }
   }
 }
@@ -52,11 +66,80 @@ void read_sensors(void *parameter)
   for (;;)
   {
     DateTime now = rtc.now();
+    timestamp = String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second());
     sensors.requestTemperatures();
     temperature = sensors.getTempCByIndex(0);
-
-    printf("Date Time: %s,%d-%d-%d >> ", daysOfTheWeek[now.dayOfTheWeek()], now.day(), now.month(), now.year());
-    printf("Temperature: %.1f ºC, TDS: %.f ppm\n", temperature, myTDS.read(temperature));
     vTaskDelay(interval / portTICK_PERIOD_MS);
   }
+}
+
+void input_handle()
+{
+  while (Serial.available())
+  {
+    inChar = Serial.readString();
+    Serial.println(inChar);
+  }
+
+  if (inChar == "help\n")
+  {
+    printf("==================================\n");
+    printf("Pilih Menu !:\n\n1. Ubah Interval\n2. Buka Data SDcard\n");
+    printf("==================================\n");
+    while (1)
+    {
+      String inMenu;
+      while (Serial.available())
+      {
+        inMenu = Serial.readString();
+        Serial.println(inMenu);
+      }
+      if (inMenu.length() > 0)
+      {
+        if (inMenu == "1\n")
+        {
+          printf("Ubah Interval Dipilih\nMasukan Nilai:\n");
+          printf("==================================\n");
+          while (1)
+          {
+            String inVal;
+            if (Serial.available())
+            {
+              inVal = Serial.readString();
+              Serial.println(inVal);
+              interval = inVal.toInt();
+
+              config = false;
+              inChar = "";
+              inMenu = "";
+              break;
+            }
+          }
+        }
+        else if (inMenu == "2\n")
+        {
+          printf("Buka Data SDcard Dipilih\n");
+          printf("==================================\n\n");
+          printf("Membuka file...\n");
+          delay(5000);
+          readFile(SD, "/data.txt");
+          delay(2000);
+
+          printf("\n\nTekan enter untuk selesai\n");
+          config = false;
+          inChar = "";
+          inMenu = "";
+          break;
+        }
+        else
+        {
+          printf("Not Valid\n");
+          break;
+        }
+      }
+      if (config == false)
+        break;
+    }
+  }
+  config = true;
 }
