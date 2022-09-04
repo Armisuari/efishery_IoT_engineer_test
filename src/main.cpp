@@ -15,6 +15,7 @@ String payload;
 
 void read_sensors(void *parameter);
 void input_handle();
+void start_handle();
 
 void setup()
 {
@@ -31,7 +32,8 @@ void setup()
       1,
       NULL);
 
-  printf("Ready...\n");
+  printf("Ready\n");
+  start_handle();
 
   while (1)
   {
@@ -73,8 +75,71 @@ void read_sensors(void *parameter)
   }
 }
 
+void start_handle()
+{
+  printf("\n\n=======================================\n");
+  printf("ESP32 with TDS & DS18b20 Sensor Temp\n");
+  printf("=======================================\n");
+  printf("Pilih Menu !:\n\n1. Stream Data\n2. Set Interval\n3. Buka Data SDcard\n");
+  printf("==================================\n");
+
+  while (1)
+  {
+    while (Serial.available())
+    {
+      inChar = Serial.readString();
+      Serial.println(inChar);
+    }
+    if (inChar.length() > 0)
+    {
+      if (inChar == "1\n")
+      {
+        printf("Stream Data dipilih\n");
+        printf("==================================\n");
+        break;
+      }
+      else if (inChar == "2\n")
+      {
+        printf("Set Interval dipilih\n");
+        printf("Masukan Nilai:\n");
+        printf("==================================\n");
+
+        while (1)
+        {
+          String inVal;
+          if (Serial.available())
+          {
+            inVal = Serial.readString();
+            Serial.println(inVal);
+            interval = inVal.toInt();
+
+            config = false;
+            inChar = "";
+            break;
+          }
+        }
+        break;
+      }
+      else if (inChar == "3\n")
+      {
+        printf("Buka Data SDcard Dipilih\n");
+        printf("==================================\n\n");
+        printf("Membuka file...\n");
+        delay(3000);
+        readFile(SD, "/data.txt");
+        delay(2000);
+
+        printf("\nStream Data start in 10 second...\n");
+        delay(10000);
+        break;
+      }
+    }
+  }
+}
+
 void input_handle()
 {
+
   while (Serial.available())
   {
     inChar = Serial.readString();
@@ -121,11 +186,10 @@ void input_handle()
           printf("Buka Data SDcard Dipilih\n");
           printf("==================================\n\n");
           printf("Membuka file...\n");
-          delay(5000);
+          delay(3000);
           readFile(SD, "/data.txt");
           delay(2000);
 
-          printf("\n\nTekan enter untuk selesai\n");
           config = false;
           inChar = "";
           inMenu = "";
