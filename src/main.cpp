@@ -41,13 +41,6 @@ void setup()
 
     input_handle();
 
-    if (millis() - prevMill >= 1000)
-    {
-      prevMill = millis();
-      printf("Date Time: %s,%d-%d-%d | %s >> ", daysOfTheWeek[now.dayOfTheWeek()], now.day(), now.month(), now.year(), timestamp);
-      printf("Temperature: %.1f ºC, TDS: %.f ppm\n", temperature, myTDS.read(temperature));
-    }
-
     if (millis() - previousMillis >= interval)
     {
       previousMillis = millis();
@@ -71,7 +64,15 @@ void read_sensors(void *parameter)
     timestamp = String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second());
     sensors.requestTemperatures();
     temperature = sensors.getTempCByIndex(0);
-    vTaskDelay(interval / portTICK_PERIOD_MS);
+
+    if (millis() - prevMill >= interval)
+    {
+      prevMill = millis();
+      printf("Date Time: %s,%d-%d-%d | %s >> ", daysOfTheWeek[now.dayOfTheWeek()], now.day(), now.month(), now.year(), timestamp);
+      printf("Temperature: %.1f ºC, TDS: %.f ppm\n", temperature, myTDS.read(temperature));
+    }
+
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
 
